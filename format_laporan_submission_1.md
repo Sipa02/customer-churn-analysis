@@ -10,8 +10,11 @@ Seiring berkembangnya teknologi, pendekatan berbasis machine learning terbukti e
 
 Dengan solusi ini, perusahaan telekomunikasi dapat meningkatkan kepuasan pelanggan, memperkuat daya saing, dan mempertahankan stabilitas bisnis jangka panjang.
 
+
 Referensi:
+
 [Analysis of customer churn prediction using machine learning and deep learning algorithms](https://doi.org/10.53730/ijhs.v6nS1.7861)
+
 [Implementing machine learning techniques for customer retention and churn prediction in telecommunications](https://doi.org/10.51594/csitrj.v5i8.1489)
 
 ## Business Understanding
@@ -34,20 +37,15 @@ Penting untuk memahami variabel-variabel mana yang menjadi indikator kuat terhad
 
 
 ### Solution statements
-1. Mengembangkan model prediktif menggunakan algoritma Machine Learning seperti Random Forest, XGBoost, dan Logistic Regression untuk membandingkan performa dan memilih model terbaik berdasarkan metrik evaluasi seperti accuracy, precision, recall, dan AUC.
+1. Mengembangkan model prediktif menggunakan algoritma Machine Learning seperti Random Forest dan Logistic Regression untuk membandingkan performa dan memilih model terbaik berdasarkan metrik evaluasi seperti accuracy, precision, recall, dan f1-score.
 
-2. Melakukan feature importance analysis untuk mengetahui variabel-variabel paling berpengaruh terhadap perilaku churn.
 
-3. Meningkatkan performa model baseline dengan teknik hyperparameter tuning dan oversampling (SMOTE) untuk menangani ketidakseimbangan kelas dalam dataset.
-
-4. Mengimplementasikan pipeline evaluasi model yang sistematis guna memastikan model dapat diandalkan sebelum digunakan dalam pengambilan keputusan bisnis.
 
 ## Data Understanding
-Dataset yang digunakan adalah Telcom Customer Churn dari Kaggle. Dataset ini berisi informasi pelanggan seperti jenis kontrak, lamanya berlangganan, hingga apakah mereka memiliki layanan tambahan. Dataset berisi 7043 baris.
-[WA_Fn-UseC_-Telco-Customer-Churn](https://www.kaggle.com/datasets/palashfendarkar/wa-fnusec-telcocustomerchurn).
+Dataset yang digunakan adalah [Telcom Customer Churn](https://www.kaggle.com/datasets/palashfendarkar/wa-fnusec-telcocustomerchurn) dari Kaggle. Dataset ini terdiri dari 7043 baris dan 21 kolom. Berdasarkan eksplorasi awal, tidak ditemukan missing value maupun data duplikat. Namun, terdapat indikasi outlier pada kolom tenure, yang perlu diperhatikan dalam proses analisis dan pemodelan selanjutnya.
 
 
-### Variabel-variabel pada Restaurant UCI dataset adalah sebagai berikut:
+### Variabel-variabel pada Telcom Customer Churn dataset adalah sebagai berikut:
 - customerID – ID unik pelanggan
 
 - gender – Jenis kelamin (Male or Female)
@@ -90,143 +88,282 @@ Dataset yang digunakan adalah Telcom Customer Churn dari Kaggle. Dataset ini ber
 
 - Churn – Variabel target (Yes/No) yang menunjukkan apakah pelanggan pergi
 
-**Rubrik/Kriteria Tambahan (Opsional)**:
-- Melakukan beberapa tahapan yang diperlukan untuk memahami data, contohnya teknik visualisasi data atau exploratory data analysis.
+### EDA
+
+Sebelum masuk ke tahap pemodelan, dilakukan eksplorasi data secara menyeluruh untuk memahami karakteristik dan pola dalam data. Tahapan ini penting untuk mengidentifikasi potensi masalah dalam data, hubungan antar fitur, dan insight awal yang berguna dalam proses modeling.
+
+1. **Mengubah Tipe Data**
+
+    Beberapa kolom pada dataset memiliki tipe data yang tidak sesuai, seperti angka yang terbaca sebagai objek dan sebaliknya. Tipe data diubah agar lebih mudah diinterpretasikan dan diproses, misalnya mengubah tipe kolom “TotalCharges” dari string menjadi numerik dan mengubah tipe kolom "SeniorCitizen" dari numerik menjadi string. Ini diperlukan untuk memastikan semua data berada dalam format yang dapat diproses oleh algoritma. 
+    Mengubah representasi variabel Churn dari Yes dan No menjadi 1 dan 0 menggunakan binary mapping. Tujuannya agar lebih mudah dibaca.
+
+2. **Menangani Missing Value**
+
+    Ditemukan sebanyak 11 baris data yang mengandung nilai hilang (missing value) setelah mengubah tipe data pada kolom TotalCharges dari object menjadi float. Karena jumlahnya relatif sangat kecil dan tidak signifikan terhadap keseluruhan data, baris-baris tersebut dihapus Langkah ini dilakukan untuk memastikan kualitas data tetap terjaga dan siap digunakan pada tahap pemodelan selanjutnya.
+
+3. **Memisahkan Kolom Kategorikal dan Numerik**
+
+    Pemisahan ini dilakukan untuk mempermudah proses transformasi data sesuai dengan jenisnya. Kolom kategorikal akan diproses dengan encoding, sedangkan kolom numerik akan distandarisasi. Tahapan ini diperlukan untuk mnghindari kesalahan pemrosesan karena perbedaan tipe data.
+
+4. **Univariate dan Multivariate Analysis terhadap Fitur Churn**
+
+    Analisis ini dilakukan dengan memvisualisasikan seluruh fitur baik kategorikal maupun numerikal untuk memahami distribusi data dan hubungan awal antar fitur terhadap target Churn. Tahapan ini membantu mengidentifikasi pola dasar dan potensi hubungan antar variabel.
+
+    Hasil Temuan:
+    - Distribusi pelanggan berdasarkan jenis kelamin (laki-laki dan perempuan) relatif seimbang, baik dari sisi jumlah pelanggan maupun distribusi churn. Artinya, jenis kelamin tidak menunjukkan pengaruh signifikan terhadap kecenderungan churn.
+
+    - Meskipun sebagian besar pelanggan berasal dari kalangan usia muda, persentase churn lebih tinggi pada pelanggan lansia (senior citizen). Hal ini dapat dijelaskan oleh proporsi pelanggan lansia yang relatif kecil, namun dengan tingkat churn yang lebih besar secara persentase.
+
+    - Pelanggan yang tidak menggunakan layanan seperti Tech Support, Device Protection, Online Backup, dan Online Security memiliki tingkat churn yang lebih tinggi dibandingkan pelanggan yang menggunakan layanan-layanan tersebut. Hal ini menunjukkan bahwa penggunaan layanan tambahan mungkin berkontribusi terhadap loyalitas pelanggan.
+
+    - Distribusi pelanggan yang menggunakan maupun tidak menggunakan layanan streaming (TV maupun Movies) relatif seimbang. Tingkat churn pada kedua kelompok ini juga serupa. Namun, pelanggan yang tidak menggunakan layanan streaming sama sekali menunjukkan tingkat churn yang sangat rendah, meskipun jumlahnya sedikit.
+
+    - Pelanggan dengan kontrak jangka panjang (satu hingga dua tahun) menunjukkan tingkat churn yang lebih rendah secara signifikan dibandingkan pelanggan dengan kontrak bulanan. Hal ini mengindikasikan bahwa komitmen jangka panjang dapat menurunkan risiko churn.
+
+    - Metode pembayaran menggunakan electronic check lebih sering dikaitkan dengan tingkat churn yang tinggi dibandingkan metode pembayaran lainnya, seperti automatic bank transfer atau credit card.
+
+
+    - Pelanggan yang menggunakan layanan Fiber Optic memiliki kecenderungan churn yang lebih tinggi dibandingkan pelanggan dengan layanan DSL atau tanpa layanan internet. Hal ini dapat disebabkan oleh persepsi terhadap harga atau kualitas layanan.
+
+5. **Korelasi Antar Variabel Numerik**
+
+    Heatmap korelasi digunakan untuk melihat hubungan antar fitur numerik. Fitur seperti tenure, monthly charges, dan total charges menunjukkan korelasi tertentu terhadap churn. Tenure (lama berlangganan) memiliki korelasi negatif dengan churn: semakin lama pelanggan menggunakan layanan, semakin kecil kemungkinan mereka churn.
+
+    
+
 
 ## Data Preparation
 Tahapan data preparation dilakukan untuk memastikan bahwa data siap digunakan oleh model machine learning dan menghasilkan performa yang optimal. Beberapa langkah yang dilakukan pada tahap ini meliputi:
 
-1. Mengubah Tipe Data
-Beberapa kolom pada dataset memiliki tipe data yang tidak sesuai, seperti angka yang terbaca sebagai objek. Tipe data diubah agar lebih mudah diinterpretasikan dan diproses, misalnya mengubah tipe kolom “TotalCharges” dari string menjadi numerik. Ini diperlukan untuk memastikan semua data berada dalam format yang dapat diproses oleh algoritma.
 
-2. Memisahkan Kolom Kategorikal dan Numerik
-Pemisahan ini dilakukan untuk mempermudah proses transformasi data sesuai dengan jenisnya. Kolom kategorikal akan diproses dengan encoding, sedangkan kolom numerik akan distandarisasi. Tahapan ini diperlukan untuk mnghindari kesalahan pemrosesan karena perbedaan tipe data.
+1. **Encoding dan Standarisasi**
 
-3. Encoding dan Standarisasi
+    - One-Hot Encoding diterapkan pada kolom kategorikal agar model dapat memahami data kategorikal dalam bentuk numerik tanpa mengasumsikan hubungan ordinal.
 
-- One-Hot Encoding diterapkan pada kolom kategorikal agar model dapat memahami data kategorikal dalam bentuk numerik tanpa mengasumsikan hubungan ordinal.
+    - RobustScaler digunakan pada kolom numerik untuk menstandarisasi nilai agar berada dalam skala yang sama, sehingga mempercepat konvergensi model dan meningkatkan akurasi.
 
-- StandardScaler digunakan pada kolom numerik untuk menstandarisasi nilai agar berada dalam skala yang sama, sehingga mempercepat konvergensi model dan meningkatkan akurasi.
+2. **Memisahkan Fitur X dan Target y**
+    Menghapus kolom Churn dan CustomerID untuk fitur X karna Churn akan digunakan untuk target y, sedangkan CustomerID dihapus karna tidak dibutuhkan.
 
-Tahapan ini sangat penting untuk meningkatkan kemampuan generalisasi model melalui transformasi dan penyeimbangan kelas.
 
-4. Menangani Ketidakseimbangan Kelas (Imbalanced Data)
-Dataset menunjukkan distribusi kelas yang tidak seimbang antara pelanggan yang churn dan tidak churn. Oleh karena itu, teknik SMOTE (Synthetic Minority Over-sampling Technique) digunakan untuk melakukan oversampling pada kelas minoritas. Hal ini bertujuan agar model tidak bias terhadap kelas mayoritas dan dapat belajar dengan seimbang dari kedua kelas.
+4. **Menangani Ketidakseimbangan Kelas (Imbalanced Data)**
 
-5. Membagi Data Train dan Test
-Dataset dibagi menjadi data latih dan data uji dengan proporsi yang umum digunakan (misalnya 80:20) agar model dapat dievaluasi secara objektif terhadap data yang belum pernah dilihat sebelumnya. 
+    Dataset menunjukkan distribusi kelas yang tidak seimbang antara pelanggan yang churn dan tidak churn. Oleh karena itu, teknik SMOTE (Synthetic Minority Over-sampling Technique) digunakan untuk melakukan oversampling pada kelas minoritas. Hal ini bertujuan agar model tidak bias terhadap kelas mayoritas dan dapat belajar dengan seimbang dari kedua kelas.
+
+5. **Membagi Data Train dan Test**
+
+    Dataset dibagi menjadi data latih dan data uji dengan proporsi 80:20 agar model dapat dievaluasi secara objektif terhadap data yang belum pernah dilihat sebelumnya. 
 
 
 ## Modeling
 Pada tahap ini, dilakukan pemodelan menggunakan beberapa algoritma machine learning untuk memprediksi customer churn. Proses pemodelan dimulai dari algoritma yang sederhana sebagai baseline, kemudian dilanjutkan dengan model yang lebih kompleks untuk mengeksplorasi performa yang lebih optimal.
 
-1. Logistic Regression (Baseline Model)
-Model Logistic Regression digunakan sebagai baseline karena memiliki karakteristik berikut:
+1. **Logistic Regression**
 
-- Sederhana dan mudah diinterpretasikan.
+    Model Logistic Regression digunakan sebagai baseline karena memiliki karakteristik berikut:
 
-- Cepat dalam proses pelatihan.
+    - Sederhana dan mudah diinterpretasikan.
 
-- Memberikan estimasi probabilitas churn yang berguna untuk pengambilan keputusan bisnis.
+    - Cepat dalam proses pelatihan.
 
-Model dilatih menggunakan parameter default tanpa tuning terlebih dahulu. Tujuannya adalah untuk mendapatkan baseline performa awal yang nantinya akan dibandingkan dengan model lain. Evaluasi dilakukan menggunakan metrik accuracy, precision, recall, dan AUC.
+    - Memberikan estimasi probabilitas churn yang berguna untuk pengambilan keputusan bisnis.
 
-Kelebihan:
+    Model dilatih menggunakan parameter default tanpa tuning terlebih dahulu. Tujuannya adalah untuk mendapatkan baseline performa awal yang nantinya akan dibandingkan dengan model lain. Evaluasi dilakukan menggunakan metrik accuracy, precision, recall. 
 
-- Interpretasi koefisien fitur mudah dilakukan.
+    Parameter awal yang digunakan:
+    - max_iter = 100 : Batas maksimum iterasi selama proses optimisasi model.
 
-- Cepat dan efisien pada dataset kecil hingga menengah.
+    Setelah melatih model awal, dilakukan proses hyperparameter tuning menggunakan GridSearchCV untuk meningkatkan performa model. Parameter yang dieksplorasi dalam tuning antara lain:
 
-Kekurangan:
+    - C = 100 : mengontrol seberapa besar kita menghindari overfitting.
+    
+    - class_weight = 'balanced : untuk menangani ketidakseimbangan kelas churn dan non-churn.
 
-- Asumsi hubungan linear antara fitur dan target seringkali tidak sesuai untuk data kompleks.
+    - max_iter = 500 : Batas maksimum iterasi selama proses optimisasi model.
 
-- Performa dapat menurun jika data memiliki korelasi antar fitur atau relasi non-linear.
+    - penalty = 'l2' : jenis regularisasi yang digunakan.
 
-2. Random Forest (Model Kompleks)
-Model Random Forest digunakan untuk mengeksplorasi model yang lebih kompleks. Algoritma ini merupakan ensemble model berbasis decision tree yang mampu menangkap hubungan non-linear dan bekerja baik terhadap dataset dengan banyak fitur.
+    - solver = 'liblinear' :  optimisasi yang digunakan untuk menemukan bobot terbaik.
 
-Parameter awal yang digunakan:
+    **Kelebihan**:
 
-- n_estimators = 100: jumlah pohon dalam model.
+    - Interpretasi koefisien fitur mudah dilakukan.
 
-- max_depth = None: tidak ada batasan kedalaman pohon, sehingga pohon dapat tumbuh penuh.
+    - Cepat dan efisien pada dataset kecil hingga menengah.
 
-- random_state = 42: menjaga konsistensi hasil.
+    **Kekurangan:**
 
-- class_weight = 'balanced': untuk menangani ketidakseimbangan kelas churn dan non-churn.
+    - Asumsi hubungan linear antara fitur dan target seringkali tidak sesuai untuk data kompleks.
 
-Setelah melatih model awal, dilakukan proses hyperparameter tuning menggunakan GridSearchCV untuk meningkatkan performa model. Parameter yang dieksplorasi dalam tuning antara lain:
+    - Performa dapat menurun jika data memiliki korelasi antar fitur atau relasi non-linear.
 
-n_estimators: jumlah pohon.
 
-max_depth: kedalaman maksimum pohon.
+2. **Random Forest** 
+    
+    Model Random Forest digunakan untuk mengeksplorasi model yang lebih kompleks. Algoritma ini merupakan ensemble model berbasis decision tree yang mampu menangkap hubungan non-linear dan bekerja baik terhadap dataset dengan banyak fitur.
 
-min_samples_split: jumlah minimal sampel untuk membagi node.
+    Parameter awal yang digunakan:
 
-Kelebihan:
+    - n_estimators = 100: jumlah pohon dalam model.
 
-Dapat menangani data yang tidak teratur dan hubungan antar fitur yang kompleks.
+    - max_depth = None: kedalaman maksimum pohon.
 
-- Tidak mudah overfitting karena menggunakan voting dari banyak pohon.
+    - random_state = 42: menjaga konsistensi hasil.
 
-- Memberikan estimasi feature importance yang berguna dalam analisis bisnis.
+    - class_weight = 'balanced': untuk menangani ketidakseimbangan kelas churn dan non-churn.
 
-Kekurangan:
+    Setelah melatih model awal, dilakukan proses hyperparameter tuning menggunakan GridSearchCV untuk meningkatkan performa model. Parameter yang dieksplorasi dalam tuning antara lain:
 
-- Waktu pelatihan dan prediksi lebih lama dibanding model sederhana.
+    - n_estimators = 200: jumlah pohon.
 
-- Interpretasi tidak sejelas Logistic Regression.
+    - max_depth = None: kedalaman maksimum pohon.
 
-Pemilihan Model Terbaik
-Berdasarkan hasil evaluasi pada data validasi menggunakan metrik seperti recall dan AUC, model Random Forest menunjukkan performa yang lebih baik dibanding Logistic Regression. Oleh karena itu, Random Forest dipilih sebagai model terbaik karena:
+    - min_samples_split = 2 : jumlah minimal sampel untuk membagi node.
+
+    - min_samples_leaf = 2 : jumlah minimal sampel yang harus ada di leaf node.
+
+    - max_features = 'log2' : jumlah fitur yang dipertimbangkan secara acak ketika membagi node adalah logaritma basis 2 dari total fitur
+
+    **Kelebihan**:
+
+    - Dapat menangani data yang tidak teratur dan hubungan antar fitur yang kompleks.
+
+    - Tidak mudah overfitting karena menggunakan voting dari banyak pohon.
+
+
+    **Kekurangan**:
+
+    - Waktu pelatihan dan prediksi lebih lama dibanding model sederhana.
+
+    - Interpretasi tidak sejelas Logistic Regression.<br />
+
+#### Pemilihan Model Terbaik
+Berdasarkan hasil evaluasi pada data validasi menggunakan metrik seperti recall, model Random Forest menunjukkan performa yang lebih baik dibanding Logistic Regression. Oleh karena itu, Random Forest dipilih sebagai model terbaik karena:
 
 - Mampu menangkap kompleksitas data dengan lebih baik.
 
-- Memiliki skor recall dan AUC yang lebih tinggi, yang sangat penting dalam konteks churn prediction, di mana mengidentifikasi pelanggan yang benar-benar akan churn lebih penting daripada hanya mencapai akurasi tinggi.
+- Memiliki skor recall yang lebih tinggi, yang sangat penting dalam konteks churn prediction, di mana mengidentifikasi pelanggan yang benar-benar akan churn lebih penting daripada hanya mencapai akurasi tinggi.
 
 
 ## Evaluation
 Dalam proyek ini, evaluasi model dilakukan dengan menggunakan beberapa metrik evaluasi yang relevan untuk masalah klasifikasi churn, yaitu:
 
-- Accuracy: Mengukur persentase prediksi yang benar dari seluruh data. Namun, karena dataset imbalance (jumlah pelanggan churn vs tidak churn tidak seimbang).
+- **Accuracy**: Mengukur persentase prediksi yang benar dari seluruh data. Namun, karena dataset imbalance (jumlah pelanggan churn vs tidak churn tidak seimbang).
 
-![alt text](Churn Analysis\asset\akurasi.png)
+    ![akurasi](https://github.com/user-attachments/assets/bc29ece2-7e88-4581-8b81-d335ac272fda)
 
-Misal diketahui confussion matrix seperti di bawah ini:
-![alt text](asset\confusion_matrix.png)
 
-maka akurasi model tersbut adalah (834+897) / (834+199+136+897) = 0.84.
-Akurasi hanya cocok digunakan pada saat perbandingan jumlah label data sebenarnya relatif sama.
+    Misal diketahui confussion matrix seperti di bawah ini:
 
-- Precision: Mengukur seberapa banyak dari pelanggan yang diprediksi akan churn, yang benar-benar churn. Berguna untuk menghindari false positive, yaitu salah mengira pelanggan tetap sebagai pelanggan churn.
+    ![confusion_matrix](https://github.com/user-attachments/assets/632f7485-927e-415d-ac8d-7dfc81cdaa6d)
 
-![alt text](asset\presisi.png)
 
-- Recall: Mengukur seberapa banyak dari pelanggan yang benar-benar churn, yang berhasil terdeteksi oleh model. Metode ini penting karena perusahaan ingin mengidentifikasi sebanyak mungkin pelanggan yang berisiko churn agar bisa segera mengambil tindakan.
+    Maka akurasi model tersebut adalah (834+897) / (834+199+136+897) = 0.84.
+    
+    Akurasi hanya cocok digunakan pada saat perbandingan jumlah label data sebenarnya relatif sama.<br />
+      
 
-- F1-Score: Harmonik rata-rata dari precision dan recall. Metrik ini cocok digunakan saat kita ingin menjaga keseimbangan antara false positive dan false negative.
+    
+- **Precision**: Mengukur seberapa banyak dari pelanggan yang diprediksi akan churn, yang benar-benar churn. Berguna untuk menghindari false positive, yaitu salah mengira pelanggan tetap sebagai pelanggan churn.
 
-- AUC (Area Under the ROC Curve): Metrik yang menunjukkan seberapa baik model dalam membedakan antara pelanggan yang churn dan tidak churn. Semakin tinggi nilai AUC (maksimal 1), semakin baik performa klasifikasi model.
+    ![presisi](https://github.com/user-attachments/assets/2212b659-7c49-4417-b00b-1d2abe2aed10)
 
-📊 Hasil Evaluasi
-Model Random Forest memberikan hasil sebagai berikut:
 
-Metrik	Nilai
-Accuracy	0.84
-Precision	0.82
-Recall	    0.87
-F1-Score	0.84
-AUC	        0.91
+    Misal diketahui confussion matrix seperti di bawah ini:
+
+    ![confusion_matrix](https://github.com/user-attachments/assets/87c10852-e41e-4cd4-83d8-059b3302e27d)
+
+
+    Maka precision model tersebut adalah (834+897) / (834+199+136+897) = 0.84.<br />
+
+- **Recall**: Mengukur seberapa banyak dari pelanggan yang benar-benar churn, yang berhasil terdeteksi oleh model. Metode ini penting karena perusahaan ingin mengidentifikasi sebanyak mungkin pelanggan yang berisiko churn agar bisa segera mengambil tindakan.
+
+    ![recall](https://github.com/user-attachments/assets/bd273eee-735c-4220-8fb7-687e91c2d588)
+
+
+    Misal diketahui confussion matrix seperti di bawah ini:
+
+    ![confusion_matrix](https://github.com/user-attachments/assets/aae41104-01f5-49f8-b60b-3f464df61495)
+
+
+    Maka recall model tersebut adalah (834) / (834+136) = 0.87.<br />
+
+- **F1-Score**: Harmonik rata-rata dari precision dan recall. Metrik ini cocok digunakan saat kita ingin menjaga keseimbangan antara false positive dan false negative.
+
+    ![f1_score](https://github.com/user-attachments/assets/bc515156-c11a-4ad1-a886-d61443d5dd19)
+
+
+    Misal diketahui confussion matrix seperti di bawah ini:
+
+    ![confusion_matrix](https://github.com/user-attachments/assets/69195fee-b790-41ce-96f7-2478b1f1664b)
+
+
+    Maka F1-score model tersebut adalah (2*0.87*0.84) / (0.87+0.84) = 0.84.<br />
+
+
+
+#### Hasil Evaluasi Model 
+
+1. **Logistic Regression**
+   
+    Model dilatih dengan menggunakan parameter default
+    <br />
+      ![lr_cr_default](https://github.com/user-attachments/assets/044aa8ba-f99d-48c4-913d-80fe4829138f)
+ 
+    
+
+    Model setelah menggunakan grid search untuk menemukan kombinasi parameter terbaik
+     <br />
+      ![lr_cr_best](https://github.com/user-attachments/assets/58ca37db-b144-409e-998e-6e7fab265618)
+
+
+    Confusion Matrix:
+    <br />
+      ![lr_cm](https://github.com/user-attachments/assets/f0115542-ac96-4a60-a293-f26bfc46785b)
+
+ Nilai recall dan precision belum terlalu bagus walaupun sudah menggunakan kombinasi parameter terbaik yang ditemukan grid search.
+
+
+3. **Random Forest**
+   <br />
+    Model dilatih dengan menggunakan parameter default
+    <br />
+      ![rf_cr_default](https://github.com/user-attachments/assets/976405b5-dd48-4e0b-b3e5-cdc198fb494d)
+
+
+    Model setelah menemukan kombinasi parameter terbaik menggunakan grid search
+    <br />
+      ![rf_cr_best](https://github.com/user-attachments/assets/5e01a564-2613-48ba-bd9b-c0d7a4237fec)
+
+
+    Confusion Matrix:
+    <br />
+      ![rf_cm](https://github.com/user-attachments/assets/76ce01b5-c380-4245-9517-07c1e2d01d6b)
+
+
+
 
 Nilai recall yang tinggi (0.87) menunjukkan bahwa model cukup efektif dalam mengidentifikasi pelanggan yang akan churn, sesuai dengan tujuan bisnis. Precision yang cukup baik juga menunjukkan bahwa model tidak terlalu banyak memberikan alarm palsu (false positive).
+<br />
+<br />
+#### Fitur yang Berkontribusi Besar pada Model 
 
-**Rubrik/Kriteria Tambahan (Opsional)**: 
-- Menjelaskan formula metrik dan bagaimana metrik tersebut bekerja.
+1. **Logistic Regression**
+    <br />
+     ![lr_fitur](https://github.com/user-attachments/assets/f1cab15e-9589-4094-ad80-299f92810685)
 
-**---Ini adalah bagian akhir laporan---**
 
-_Catatan:_
-- _Anda dapat menambahkan gambar, kode, atau tabel ke dalam laporan jika diperlukan. Temukan caranya pada contoh dokumen markdown di situs editor [Dillinger](https://dillinger.io/), [Github Guides: Mastering markdown](https://guides.github.com/features/mastering-markdown/), atau sumber lain di internet. Semangat!_
-- Jika terdapat penjelasan yang harus menyertakan code snippet, tuliskan dengan sewajarnya. Tidak perlu menuliskan keseluruhan kode project, cukup bagian yang ingin dijelaskan saja.
+3. **Random Forest**
+    <br />
+     ![rf_fitur](https://github.com/user-attachments/assets/1c49129c-fc0a-43ce-a354-770b8d167836)
+
+<br />
+<br />
+Seluruh proses analisis dan pemodelan yang telah dilakukan berhasil menjawab solution statement yang dirumuskan di awal, yaitu mengembangkan model prediktif untuk mengidentifikasi pelanggan yang berisiko churn serta memahami faktor-faktor yang memengaruhinya.
+
+Hasil eksplorasi data telah mengungkap fitur-fitur penting yang berkorelasi dengan churn, seperti jenis kontrak, metode pembayaran, layanan tambahan, hingga usia pelanggan. Proses pemodelan juga menunjukkan bahwa metrik recall menjadi pertimbangan utama dalam memilih model terbaik, karena dapat meminimalkan risiko pelanggan yang churn tetapi tidak terdeteksi.
+
+Dengan demikian, keseluruhan tahapan ini diharapkan dapat menjadi langkah awal bagi perusahaan dalam memanfaatkan machine learning untuk mendukung pengambilan keputusan strategis, khususnya dalam upaya meningkatkan retensi pelanggan dan mengurangi churn secara proaktif.
+
+
 
